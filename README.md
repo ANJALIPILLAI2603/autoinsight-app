@@ -99,8 +99,8 @@ autoinsight-app/
 ## 👩‍💻 Author
 
 **Anjali Pillai**
-Aspiring Data Scientist | Analytics Enthusiast
-🔗 [LinkedIn](https://www.linkedin.com/in/anjalipillai2603/)
+| Aspiring Data Scientist | Analytics Enthusiast
+🔗Let's Connect [LinkedIn](www.linkedin.com/in/anjali-pillai-367b2b259)
 
 ---
 
