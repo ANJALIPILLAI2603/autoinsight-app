@@ -67,6 +67,9 @@ streamlit run app.py
 
 ![image](https://github.com/user-attachments/assets/9bd1501b-a952-4a82-8a2f-14635a701b29)
 
+![image](https://github.com/user-attachments/assets/17ca3e56-a4e9-458e-9fc6-d66f9da88e93)
+
+![image](https://github.com/user-attachments/assets/a070c3a2-8a93-4e09-af61-108e56399db9)
 
 ## 🧠 AI Insight Summary Generator
 
