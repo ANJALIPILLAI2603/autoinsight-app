@@ -1,5 +1,5 @@
 
-````
+
 # 📊 AutoInsight: AI-Powered Multi-Chart EDA Generator
 
 **AutoInsight** is a smart and interactive Streamlit-based web app that enables users to:
@@ -14,7 +14,7 @@
 
 ## 🚀 Live Demo
 
-👉 [Click here to try AutoInsight: https://autoinsight-app-rufex8pp9axc8tmuyskx3l.streamlit.app/)
+👉 [Click here to try AutoInsight: https://autoinsight-app-rufex8pp9axc8tmuyskx3l.streamlit.app)
 ---
 
 ## 🛠 Tech Stack
