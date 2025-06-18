@@ -14,9 +14,7 @@
 
 ## 🚀 Live Demo
 
-👉 [Click here to try AutoInsight](https://your-streamlit-deployment-link.com)  
-_(Replace this link with your deployed app URL)_
-
+👉 [Click here to try AutoInsight: https://autoinsight-app-rufex8pp9axc8tmuyskx3l.streamlit.app/)
 ---
 
 ## 🛠 Tech Stack
