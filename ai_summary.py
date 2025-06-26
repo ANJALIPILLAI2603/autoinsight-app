@@ -1,37 +1,40 @@
-import pandas as pd
+import os
 import time
+import pandas as pd
+from dotenv import load_dotenv
 import google.generativeai as genai
 from google.api_core.exceptions import ResourceExhausted
 
-# 🔐 Replace with your actual Gemini API key
-genai.configure(api_key="AIzaSyArhPvbuMHEEY4OKhP0hPjNYTOk3jJUmto")
+# 🔐 Load API key from .env
+load_dotenv()
+genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
 def generate_structured_summary(df):
     rows, cols = df.shape
     num_cols = df.select_dtypes(include="number").columns.tolist()
     cat_cols = df.select_dtypes(include="object").columns.tolist()
 
-    lines = [f"Final Summary: The dataset contains {rows} rows and {cols} columns."]
+    lines = [f"The dataset contains {rows} rows and {cols} columns."]
 
     if num_cols:
-        lines.append(f"It includes {len(num_cols)} numeric columns such as {', '.join(num_cols[:3]) + ('...' if len(num_cols) > 3 else '')}.")
-        lines.append("For numeric data, here are some highlights:")
+        lines.append(f"\nIt includes {len(num_cols)} numeric columns such as {', '.join(num_cols[:3]) + ('...' if len(num_cols) > 3 else '')}.\n")
+        lines.append("**Numeric Column Insights:**")
         for col in num_cols:
             try:
                 mean = round(df[col].mean(), 2)
                 std = round(df[col].std(), 2)
                 max_val = round(df[col].max(), 2)
-                lines.append(f"- {col}: Mean = {mean}, Std = {std}, Max = {max_val}")
+                lines.append(f"- **{col}**: Mean = {mean}, Std Dev = {std}, Max = {max_val}")
             except:
                 continue
 
     if cat_cols:
-        lines.append(f"It includes {len(cat_cols)} categorical columns like {', '.join(cat_cols[:3]) + ('...' if len(cat_cols) > 3 else '')}.")
-        lines.append("For categorical data:")
+        lines.append(f"\nIt includes {len(cat_cols)} categorical columns like {', '.join(cat_cols[:3]) + ('...' if len(cat_cols) > 3 else '')}.\n")
+        lines.append("**Categorical Column Insights:**")
         for col in cat_cols:
             try:
                 mode_val = df[col].mode()[0] if not df[col].mode().empty else "N/A"
-                lines.append(f"- Most common value in '{col}' is '{mode_val}'")
+                lines.append(f"- **{col}**: Most common value = '{mode_val}'")
             except:
                 continue
 
@@ -42,12 +45,17 @@ def get_gemini_summary(text):
     retries = 3
     for attempt in range(retries):
         try:
-            response = model.generate_content(f"Summarize this dataset insight in a clean, readable format:\n\n{text}")
+            response = model.generate_content(
+                f"Summarize this dataset insight in a clean, readable format:\n\n{text}"
+            )
             return response.text.strip()
-        except ResourceExhausted as e:
-            print(f"[Retry {attempt+1}] Gemini quota exceeded. Waiting 30 seconds before retrying...")
+        except ResourceExhausted:
+            print(f"[Retry {attempt + 1}] Quota exceeded. Retrying in 30 seconds...")
             time.sleep(30)
-    raise RuntimeError("Failed after multiple retries: Gemini API quota exceeded.")
+        except Exception as e:
+            print(f"[Retry {attempt + 1}] Unexpected error: {e}")
+            time.sleep(15)
+    raise RuntimeError("❌ Failed after 3 retries due to API quota or error.")
 
 def create_nlp_summary(df):
     structured = generate_structured_summary(df)
