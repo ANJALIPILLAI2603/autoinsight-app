@@ -9,3 +9,4 @@ transformers
 markdown-it-py==2.2.0
 rich==13.3.5
 pygments==2.17.2
+python-dotenv
