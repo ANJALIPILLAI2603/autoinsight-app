@@ -4,16 +4,13 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 from ai_summary import create_nlp_summary
 from pdf_generator import generate_pdf
-from sklearn.model_selection import train_test_split
-from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
-from sklearn.metrics import accuracy_score, classification_report, confusion_matrix, mean_absolute_error, mean_squared_error
+from ml_predictor import train_ml_model
 import os
 import numpy as np
 
 st.set_page_config(page_title="📊 AutoInsight: Smart Report Generator", layout="wide")
 st.title("📊 AutoInsight: Smart Report & ML Predictor")
 
-# Tabs for EDA and ML
 eda_tab, ml_tab = st.tabs(["📈 EDA + PDF Report", "🤖 ML Predictions"])
 
 # ========================= EDA TAB =========================
@@ -22,8 +19,9 @@ with eda_tab:
 
     if uploaded_file is not None:
         df = pd.read_csv(uploaded_file)
-        st.success("✅ File uploaded successfully!")
+        df = df.loc[:, ~df.columns.str.contains('^Unnamed')]
 
+        st.success("✅ File uploaded successfully!")
         st.subheader("📁 Data Preview")
         st.dataframe(df.head())
 
@@ -94,7 +92,6 @@ with eda_tab:
 
         for path in fig_paths:
             os.remove(path)
-
     else:
         st.info("📂 Please upload a CSV file to begin.")
 
@@ -105,58 +102,37 @@ with ml_tab:
 
     if ml_file:
         df = pd.read_csv(ml_file)
+        df = df.loc[:, ~df.columns.str.contains('^Unnamed')]
+
         st.success("✅ File loaded!")
         st.dataframe(df.head())
 
-        # Drop ID-like or name-like columns from selection
-        exclude_cols = [col for col in df.columns if any(x in col.lower() for x in ["id", "name", "number", "row"])]
-        feature_cols = [col for col in df.columns if col not in exclude_cols]
+        exclude_keywords = ["id", "name", "number", "row"]
+        exclude_cols = [col for col in df.columns if any(kw in col.lower() for kw in exclude_keywords)]
+        usable_cols = [col for col in df.columns if col not in exclude_cols]
 
-        target = st.selectbox("🎯 Select Target Column", feature_cols)
-        input_features = [col for col in feature_cols if col != target]
+        target = st.selectbox("🎯 Select Target Column", usable_cols)
 
         if target:
-            X = df[input_features]
-            y = df[target]
-
-            # Save original categorical values for UI
-            cat_inputs = {col: df[col].unique().tolist() for col in X.select_dtypes(include="object").columns}
-
-            X = pd.get_dummies(X, drop_first=True)
-            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-
-            model = RandomForestClassifier() if y.nunique() <= 10 and y.dtype == 'int' else RandomForestRegressor()
-            model.fit(X_train, y_train)
-            preds = model.predict(X_test)
+            df = df[usable_cols]
+            metrics, model, final_features, cat_inputs, raw_inputs = train_ml_model(df, target)
 
             st.session_state.model = model
-            st.session_state.features = X.columns.tolist()
             st.session_state.cat_inputs = cat_inputs
-            st.session_state.raw_inputs = input_features
+            st.session_state.raw_inputs = raw_inputs
 
-            st.subheader("📊 Model Results")
-            if isinstance(model, RandomForestClassifier):
-                st.write("✅ Accuracy:", accuracy_score(y_test, preds))
-                st.text("Classification Report:\n" + classification_report(y_test, preds))
+            st.subheader("📈 Model Results")
+            if metrics["type"] == "classification":
+                st.write("✅ Accuracy:", metrics["accuracy"])
+                st.text("Classification Report:")
+                st.json(metrics["report"])
                 st.write("Confusion Matrix:")
-                st.write(confusion_matrix(y_test, preds))
+                st.write(metrics["confusion_matrix"])
             else:
-                st.write("✅ MAE:", mean_absolute_error(y_test, preds))
-                st.write("✅ RMSE:", np.sqrt(mean_squared_error(y_test, preds)))
+                st.write("✅ MAE:", metrics["mae"])
+                st.write("✅ RMSE:", metrics["rmse"])
 
-            result_df = pd.DataFrame({
-                f"{target}_actual": y_test.values,
-                f"{target}_predicted": preds
-            })
-
-            st.subheader("📤 Download Predictions")
-            st.dataframe(result_df.head())
-            result_df.to_csv("predictions.csv", index=False)
-            with open("predictions.csv", "rb") as f:
-                st.download_button("📥 Download CSV", f, file_name="predictions.csv")
-
-    # ================= Predict with Unseen Data =================
-    if "model" in st.session_state and "features" in st.session_state:
+    if "model" in st.session_state and "raw_inputs" in st.session_state:
         st.subheader("🧑‍💻 Predict with New Data")
 
         user_inputs = {}
@@ -169,14 +145,7 @@ with ml_tab:
         if st.button("🔮 Predict"):
             try:
                 input_df = pd.DataFrame([user_inputs])
-                input_encoded = pd.get_dummies(input_df)
-
-                for col in st.session_state.features:
-                    if col not in input_encoded.columns:
-                        input_encoded[col] = 0
-
-                input_encoded = input_encoded[st.session_state.features]
-                prediction = st.session_state.model.predict(input_encoded)[0]
+                prediction = st.session_state.model.predict(input_df)[0]
                 st.success(f"📍 Predicted value: **{prediction}**")
             except Exception as e:
                 st.error(f"❌ Prediction failed: {e}")

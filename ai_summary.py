@@ -24,7 +24,8 @@ def generate_structured_summary(df):
                 mean = round(df[col].mean(), 2)
                 std = round(df[col].std(), 2)
                 max_val = round(df[col].max(), 2)
-                lines.append(f"- **{col}**: Mean = {mean}, Std Dev = {std}, Max = {max_val}")
+                lines.append(f"{col} has an average of {mean:,.0f}, with a maximum of {max_val:,.0f}.")
+                
             except:
                 continue
 
